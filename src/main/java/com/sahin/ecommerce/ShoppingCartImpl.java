@@ -1,9 +1,6 @@
 package com.sahin.ecommerce;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class ShoppingCartImpl implements ShoppingCart {
@@ -64,7 +61,7 @@ public class ShoppingCartImpl implements ShoppingCart {
         for (Campaign cp : campaigns) {
 
             if (checkCartHasCategory(cp.getCategory())
-                    && checkCartHasMinimumFoCampaign(cp)) {
+                    && checkCartHasMinimumForCampaign(cp)) {
 
                 double discount = calculateTotalProductCampaignDiscount(cp);
 
@@ -96,35 +93,22 @@ public class ShoppingCartImpl implements ShoppingCart {
         return false;
     }
 
-    private boolean checkCartHasMinimumFoCampaign(Campaign campaign) {
+    private boolean checkCartHasMinimumForCampaign(Campaign campaign) {
 
-        Map<Product, Integer> productMap = basket.get(campaign.getCategory());
+        List<Map<Product, Integer>> productMapList = getProductMapFromCampaign(campaign);
 
-        /// we have to check if parent category has a campaign
-        if (productMap == null) {
-            for (Category cat : basket.keySet()) {
-                Category currentCategory = cat.getParent();
-
-                while (currentCategory != null) {
-                    if (currentCategory.getTitle().equals(campaign.getCategory().getTitle())) {
-                        productMap = basket.get(campaign.getCategory());
-                        break;
-                    }
-
-                    currentCategory = currentCategory.getParent();
-                }
-            }
-        }
-
-        if (productMap == null)
+        if (productMapList.size() == 0)
             return false;
 
         int itemCount = 0;
-        for (int count : productMap.values()) {
-            itemCount += count;
+
+        for (Map<Product, Integer> productMap : productMapList) {
+            for (int count : productMap.values()) {
+                itemCount += count;
+            }
         }
 
-        if (itemCount > campaign.getMinUnit())
+        if (itemCount >= campaign.getMinUnit())
             return true;
 
         return false;
@@ -132,34 +116,45 @@ public class ShoppingCartImpl implements ShoppingCart {
 
     private double calculateTotalProductCampaignDiscount(Campaign campaign) {
 
-        Map<Product, Integer> productMap = basket.get(campaign.getCategory());
+        List<Map<Product, Integer>> productMapList = getProductMapFromCampaign(campaign);
 
-        /// we have to check if parent category has a campaign
-        if (productMap == null) {
-            for (Category cat : basket.keySet()) {
-                Category currentCategory = cat.getParent();
-
-                while (currentCategory != null) {
-                    if (currentCategory.getTitle().equals(campaign.getCategory().getTitle())) {
-                        productMap = basket.get(campaign.getCategory());
-                        break;
-                    }
-
-                    currentCategory = currentCategory.getParent();
-                }
-            }
-        }
-
-        if (productMap == null)
+        if (productMapList.size() == 0)
             return 0;
 
         double totalAmountOfCategory = 0;
 
-        for (Map.Entry<Product, Integer> map : productMap.entrySet()) {
-            totalAmountOfCategory += (map.getKey().getPrice() * map.getValue());
+        for (Map<Product, Integer> productMap : productMapList) {
+            for (Map.Entry<Product, Integer> map : productMap.entrySet()) {
+                totalAmountOfCategory += (map.getKey().getPrice() * map.getValue());
+            }
         }
 
         return calculateCampaignDiscount(campaign, totalAmountOfCategory);
+    }
+
+    private List<Map<Product, Integer>> getProductMapFromCampaign(Campaign campaign) {
+
+        List<Map<Product, Integer>> productMapList = new ArrayList<>();
+
+        Map<Product, Integer> productMap = basket.get(campaign.getCategory());
+
+        /// we have to check if parent category has a campaign
+        if (productMap != null)
+            productMapList.add(productMap);
+
+        for (Category cat : basket.keySet()) {
+            Category currentCategory = cat.getParent();
+
+            while (currentCategory != null) {
+                if (currentCategory.getTitle().equals(campaign.getCategory().getTitle())) {
+                    productMapList.add(basket.get(cat));
+                }
+
+                currentCategory = currentCategory.getParent();
+            }
+        }
+
+        return productMapList;
     }
 
     private double calculateCampaignDiscount(Campaign campaign, double totalAmountOfCategory) {
@@ -228,6 +223,10 @@ public class ShoppingCartImpl implements ShoppingCart {
 
         System.out.println("Total Price = " + totalPrice);
         System.out.println("Total Amount After Discount = " + getTotalAmountAfterDiscount());
+
+        System.out.println("Delivery Cost  = " + getDeliveryCost());
+        System.out.println("Total Amount  = " + getTotalAmountAfterDiscount() + getDeliveryCost());
+
 
     }
 }

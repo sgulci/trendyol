@@ -16,9 +16,9 @@ public class DeliveryCostCalculatorImpl implements DeliveryCostCalculator {
     @Override
     public double calculatorFor(ShoppingCart cart){
 
-        return (cart.getNUmberOfDeliveries() * EcommerceConstants.COST_PER_DELIVERY)
-                + (cart.getNumberOfDistinctProducts() * EcommerceConstants.COST_PER_PRODUCT)
-                + EcommerceConstants.FIXED_COST;
+        return (cart.getNUmberOfDeliveries() * this.costPerDelivery
+                + (cart.getNumberOfDistinctProducts() * this.costPerProduct
+                + this.fixedCost));
     }
 
     public double getCostPerProduct() {
